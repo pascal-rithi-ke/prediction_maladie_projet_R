@@ -1,0 +1,20 @@
+# Charger les packages nécessaires
+if (!requireNamespace("shiny", quietly = TRUE)) {
+  install.packages("shiny")
+}
+if (!requireNamespace("rsconnect", quietly = TRUE)) {
+  install.packages("rsconnect")
+}
+if (!requireNamespace("bslib", quietly = TRUE)) {
+  install.packages("bslib")
+}
+
+library(shiny)
+library(rsconnect)
+library(bslib)
+
+# Définir le chemin vers le répertoire contenant l'application
+appDir <- "."
+
+# Déployer l'application
+rsconnect::deployApp(appDir, account = '3eqx4i-pascal-k0e')

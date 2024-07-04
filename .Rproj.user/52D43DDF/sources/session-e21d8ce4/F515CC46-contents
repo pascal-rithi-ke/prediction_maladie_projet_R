@@ -1,0 +1,36 @@
+ui <- navbarPage(
+  title = "Multi-page Shiny App",
+  theme = bs_theme(bootswatch = "flatly"),
+  
+  tabPanel(
+    title = "Plot",
+    sidebarLayout(
+      sidebarPanel(
+        sliderInput(
+          inputId = "bins",
+          label = "Number of bins:",
+          min = 1,
+          max = 50,
+          value = 30
+        )
+      ),
+      mainPanel(
+        plotOutput(outputId = "distPlot")
+      )
+    )
+  ),
+  
+  tabPanel(
+    title = "Summary",
+    mainPanel(
+      verbatimTextOutput(outputId = "summary")
+    )
+  ),
+  
+  tabPanel(
+    title = "Table",
+    mainPanel(
+      tableOutput(outputId = "table")
+    )
+  )
+)

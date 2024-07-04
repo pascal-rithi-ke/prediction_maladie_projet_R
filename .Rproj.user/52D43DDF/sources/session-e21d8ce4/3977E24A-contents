@@ -1,0 +1,5 @@
+source("server.R")
+source("ui.R")
+library(shiny)
+library(bslib)
+shinyApp(ui = ui, server = server)

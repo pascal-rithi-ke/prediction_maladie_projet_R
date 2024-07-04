@@ -1,0 +1,19 @@
+tabPanel(
+  title = "Scatter Plot",
+  sidebarLayout(
+    sidebarPanel(
+      selectInput(inputId = "variable_y2", 
+                  label = "Sélectionnez la variable Y:", 
+                  choices = c("Âge" = "age", "Cholestérol" = "chol", "Pression artérielle" = "trestbps", 
+                              "Fréquence cardiaque" = "thalach", "Oldpeak" = "oldpeak"),
+                  selected = "oldpeak"),
+      selectInput(inputId = "condition_filter",
+                  label = "Filtrer par condition:",
+                  choices = c("Toutes", "0", "1"),
+                  selected = "Toutes")
+    ),
+    mainPanel(
+      plotOutput(outputId = "scatterPlot")
+    )
+  )
+),

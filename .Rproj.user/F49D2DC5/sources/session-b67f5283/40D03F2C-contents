@@ -1,0 +1,309 @@
+# Charger les packages nécessaires
+source('lib.R')
+source('import.R')
+
+# Load variables from .env file
+load_dot_env(file = ".env")
+
+# URL de connexion à MongoDB
+mongo_url <- Sys.getenv("MONGO_URL")
+
+# Collection MongoDB
+collection <- "heart_cleveland_updated"
+chatbox <- "chatbox"
+
+# Interface utilisateur
+ui <- navbarPage(
+  title = "Multi-page Shiny App",
+  theme = shinytheme("flatly"),
+  
+  tabPanel(
+    title = "Heatmap",
+    mainPanel(
+      plotOutput(outputId = "heatmapPlot")
+    )
+  ),
+  
+  tabPanel(
+    title = "Sex Distribution",
+    mainPanel(
+      plotOutput(outputId = "sexDistPlot")
+    )
+  ),
+  
+  tabPanel(
+    title = "Risk Factor Comparison",
+    mainPanel(
+      plotOutput(outputId = "riskFactorPlot1")
+    ),
+    mainPanel(
+      plotOutput(outputId = "riskFactorPlot2")
+    )
+  ),
+  
+  tabPanel(
+    title = "Risk disease by Factor",
+    sidebarLayout(
+      sidebarPanel(
+        selectInput(inputId = "variable_y", 
+                    label = "Sélectionnez la variable Y:", 
+                    choices = c("Âge" = "age", "Cholestérol" = "chol", "Pression artérielle" = "trestbps", 
+                                "Fréquence cardiaque" = "thalach", "Oldpeak" = "oldpeak"),
+                    selected = "chol")
+      ),
+      mainPanel(
+        plotOutput(outputId = "riskFactorPlot3")
+      )
+    ),
+    
+    sidebarLayout(
+      sidebarPanel(
+        selectInput(inputId = "variable_y2", 
+                    label = "Sélectionnez la variable Y:", 
+                    choices = c("Âge" = "age", "Cholestérol" = "chol", "Pression artérielle" = "trestbps", 
+                                "Fréquence cardiaque" = "thalach", "Oldpeak" = "oldpeak"),
+                    selected = "oldpeak"),
+        selectInput(inputId = "condition_filter",
+                    label = "Filtrer par condition:",
+                    choices = c("Toutes", "0", "1"),
+                    selected = "Toutes")
+      ),
+      mainPanel(
+        plotOutput(outputId = "scatterPlot")
+      )
+    )
+  ),
+  
+  tabPanel(
+    title = "Model",
+    # Sidebar avec un sélecteur pour les modèles
+    sidebarLayout(
+      sidebarPanel(
+        selectInput("model", "Choisir le modèle à utiliser",
+                    choices = c("Random Forest", "KNN"))
+      ),
+      
+      # Affichage des résultats
+      mainPanel(
+        textOutput("prediction")
+      )
+    )
+  ),
+  
+  tabPanel(
+    title = "Chat",
+    fluidRow(
+      column(
+        width = 8,
+        textInput(inputId = "user_message", label = "Dites nous ce que vous avez:"),
+        actionButton(inputId = "send_message", label = "Envoyer"),
+        hr(),
+        textOutput(outputId = "chat_log")
+      )
+    )
+  )
+)
+
+# Fonction serveur
+server <- function(input, output, session) {
+  # Connect to MongoDB
+  collection_heart_cleveland_updated  <- mongo(collection = collection, url = mongo_url)
+  collection_chatbox <- mongo(collection = chatbox, url = mongo_url)
+  
+  # Charger les données (simulation pour cet exemple)
+  set.seed(2020)
+  
+  # Read data from MongoDB
+  heart_disease_data <- collection_heart_cleveland_updated$find()
+  
+  output$heatmapPlot <- renderPlot({
+    corr_matrix <- cor(heart_disease_data)
+    corr_melt <- melt(corr_matrix)
+    
+    ggplot(data = corr_melt, aes(x = Var1, y = Var2, fill = value)) +
+      geom_tile() +
+      scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+                           midpoint = 0, limit = c(-1, 1), space = "Lab", 
+                           name="Correlation") +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 45, vjust = 1, 
+                                       size = 12, hjust = 1)) + coord_fixed()
+  })
+  
+  output$sexDistPlot <- renderPlot({
+    min_count <- min(table(heart_disease_data$sex))
+    sampled_data <- heart_disease_data %>%
+      group_by(sex) %>%
+      sample_n(min_count) %>%
+      ungroup()
+    
+    ggplot(sampled_data, aes(x = factor(sex), fill = factor(condition))) +
+      geom_bar(position = "dodge") +
+      labs(title = "Distribution de la maladie par sexe", 
+           x = "Sexe (0 = Femme, 1 = Homme)", 
+           y = "Nombre de cas") +
+      scale_fill_discrete(name = "Condition")
+  })
+  
+  output$riskFactorPlot1 <- renderPlot({
+    summary_data <- heart_disease_data %>%
+      group_by(sex) %>%
+      summarise(
+        age = mean(age, na.rm = TRUE),
+        chol = mean(chol, na.rm = TRUE),
+        trestbps = mean(trestbps, na.rm = TRUE),
+        thalach = mean(thalach, na.rm = TRUE),
+        fbs = sum(fbs, na.rm = TRUE),
+        restecg = sum(restecg, na.rm = TRUE),
+        exang = sum(exang, na.rm = TRUE)
+      )
+    
+    colnames(summary_data) <- c("Sexe", "Âge", "Cholestérol", "Pression artérielle", "Fréquence cardiaque", 
+                                "Glycémie à jeun", "ECG au repos", "Angine induite par l'exercice")
+    summary_data_long <- melt(summary_data, id.vars = "Sexe")
+    summary_data_long$Sexe <- factor(summary_data_long$Sexe, labels = c("Femme", "Homme"))
+    
+    ggplot(summary_data_long, aes(x = variable, y = value, fill = Sexe)) +
+      geom_bar(stat = "identity", position = position_dodge()) +
+      coord_flip() +
+      labs(title = "Comparaison des facteurs de risque de maladie cardiaque entre les sexes",
+           x = "Facteurs de risque",
+           y = "Valeur",
+           fill = "Sexe") +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  })
+  
+  output$riskFactorPlot2 <- renderPlot({
+    min_count <- min(table(heart_disease_data$sex))
+    sampled_data <- heart_disease_data %>%
+      group_by(sex) %>%
+      sample_n(min_count) %>%
+      ungroup()
+    
+    summary_data2 <- sampled_data %>%
+      group_by(sex) %>%
+      summarise(
+        oldpeak = mean(oldpeak, na.rm = TRUE),
+        slope = mean(slope, na.rm = TRUE),
+        ca = mean(ca, na.rm = TRUE),
+        thal = mean(thal, na.rm = TRUE)
+      )
+    
+    colnames(summary_data2) <- c("Sexe", "Oldpeak", "Pente du segment ST", "Nombre de vaisseaux colorés", 
+                                 "Défaut thalassémique")
+    summary_data_long2 <- melt(summary_data2, id.vars = "Sexe")
+    summary_data_long2$Sexe <- factor(summary_data_long2$Sexe, labels = c("Femme", "Homme"))
+    
+    ggplot(summary_data_long2, aes(x = variable, y = value, fill = Sexe)) +
+      geom_bar(stat = "identity", position = position_dodge()) +
+      coord_flip() +
+      labs(title = "Comparaison des facteurs de risque de maladie cardiaque entre les sexes",
+           x = "Facteurs de risque",
+           y = "Valeur",
+           fill = "Sexe") +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  })
+  
+  # faire liste déroulante sur la variable y
+  output$riskFactorPlot3 <- renderPlot({
+    y_var <- input$variable_y
+    
+    ggplot(heart_disease_data, aes_string(x = "factor(condition)", y = y_var, fill = "factor(condition)")) +
+      geom_boxplot() +
+      labs(title = paste(y_var, "par condition de la maladie"), 
+           x = "Condition (0 = Pas de maladie, 1 = Maladie)", 
+           y = y_var) +
+      scale_fill_manual(values = c("green", "red"))
+  })
+  
+  output$scatterPlot <- renderPlot({
+    y_var2 <- input$variable_y2
+    condition_filter <- input$condition_filter
+    
+    filtered_data <- if (condition_filter == "Toutes") {
+      heart_disease_data
+    } else {
+      heart_disease_data %>% filter(condition == as.numeric(condition_filter))
+    }
+    
+    ggplot(filtered_data, aes_string(x = "age", y = y_var2, color = "factor(condition)")) +
+      geom_point(size = 3) +
+      labs(title = paste("Scatter Plot de", y_var2, "par âge et condition de la maladie"), 
+           x = "Âge", 
+           y = y_var2, 
+           color = "Condition (0 = Pas de maladie, 1 = Maladie)") +
+      scale_color_manual(values = c("green", "red"))
+  })
+  
+  # Diviser en ensemble d'entraînement et de validation (simulation)
+  test_index <- createDataPartition(y = heart_disease_data$condition, times = 1, p = 0.2, list = FALSE)
+  train_set <- heart_disease_data[-test_index, ]
+  validation <- heart_disease_data[test_index, ]
+  
+  # Charger les modèles depuis les fichiers RDS
+  rfFit <- reactive({
+    req(input$model)  # Assurez-vous que le modèle est sélectionné
+    
+    if (input$model == "Random Forest") {
+      readRDS("rf_model.rds")
+    }
+  })
+  
+  knnFit <- reactive({
+    req(input$model)  # Assurez-vous que le modèle est sélectionné
+    
+    if (input$model == "KNN") {
+      readRDS("knn_model.rds")
+    }
+  })
+  
+  # Fonction pour faire des prédictions en utilisant le modèle sélectionné
+  makePredictions <- function(model, newdata) {
+    predict(model, newdata)
+  }
+  
+  # Réaction pour afficher les résultats de prédiction
+  output$prediction <- renderPrint({
+    req(input$model)  # Assurez-vous que le modèle est sélectionné
+    
+    if (input$model == "Random Forest") {
+      rfPredict <- makePredictions(rfFit(), validation)
+      confusionMatrix(rfPredict, validation$condition)
+    } else if (input$model == "KNN") {
+      knnPredict <- makePredictions(knnFit(), validation)
+      confusionMatrix(knnPredict, validation$condition)
+    }
+  })
+  
+  # Affichage des résultats
+  output$prediction <- renderText({
+    # Afficher les résultats de prédiction en fonction du modèle sélectionné
+    if (!is.null(data())) {
+      paste("Matrice de confusion pour", input$model, ":")
+      print(data())
+    }
+  })
+  
+  
+  # Initialisation d'un vecteur pour stocker les messages
+  messages <- reactiveVal(character())
+  
+  # Réaction à l'envoi d'un message
+  observeEvent(input$send_message, {
+    new_message <- paste(Sys.time(), ":", input$user_message)
+    messages(c(messages(), new_message))
+    # Insérer le message dans MongoDB
+    collection_chatbox$insert(list(message = new_message))
+    updateTextInput(session, "user_message", value = "")
+  })
+  
+  # Affichage du journal de chat
+  output$chat_log <- renderText({
+    paste(messages(), collapse = "<br>")
+  })
+}
+
+# Créer l'application Shiny
+shinyApp(ui = ui, server = server)

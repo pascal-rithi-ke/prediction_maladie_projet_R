@@ -1,0 +1,5 @@
+source("server.R")
+source("deploy.R")
+source("ui.R")
+source("import.R")
+shinyApp(ui = ui, server = server)

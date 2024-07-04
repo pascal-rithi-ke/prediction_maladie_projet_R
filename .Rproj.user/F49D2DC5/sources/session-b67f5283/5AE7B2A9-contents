@@ -1,0 +1,3 @@
+MONGO_URL=mongodb+srv://admin:adminpasswordMongoDB77@cluster0.sp2ay.mongodb.net/predict_disease_R?retryWrites=true&w=majority&appName=Cluster0
+
+SECRET_KEY_DEPLOY=TxH51VtaB3hv63k5d9rPnn4tuVwbYcM4CvyH+ZW3

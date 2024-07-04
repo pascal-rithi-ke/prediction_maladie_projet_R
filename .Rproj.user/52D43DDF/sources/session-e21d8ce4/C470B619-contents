@@ -1,0 +1,61 @@
+# app.R
+library(shinythemes)
+library(shiny)
+
+# Interface utilisateur
+ui <- navbarPage(
+  title = "Multi-page Shiny App",
+  theme = shinytheme("flatly"),
+  
+  tabPanel(
+    title = "Plot",
+    sidebarLayout(
+      sidebarPanel(
+        sliderInput(
+          inputId = "bins",
+          label = "Number of bins:",
+          min = 1,
+          max = 50,
+          value = 30
+        )
+      ),
+      mainPanel(
+        plotOutput(outputId = "distPlot")
+      )
+    )
+  ),
+  
+  tabPanel(
+    title = "Summary",
+    mainPanel(
+      verbatimTextOutput(outputId = "summary")
+    )
+  ),
+  
+  tabPanel(
+    title = "Table",
+    mainPanel(
+      tableOutput(outputId = "table")
+    )
+  )
+)
+
+# Fonction serveur
+server <- function(input, output) {
+  output$distPlot <- renderPlot({
+    x <- faithful$waiting
+    bins <- seq(min(x), max(x), length.out = input$bins + 1)
+    hist(x, breaks = bins, col = 'darkgray', border = 'white')
+  })
+  
+  output$summary <- renderPrint({
+    summary(faithful)
+  })
+  
+  output$table <- renderTable({
+    head(faithful)
+  })
+}
+
+# Créer l'application Shiny
+shinyApp(ui = ui, server = server)

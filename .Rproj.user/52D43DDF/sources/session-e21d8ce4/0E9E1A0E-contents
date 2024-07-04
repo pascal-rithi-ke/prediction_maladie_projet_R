@@ -1,0 +1,7 @@
+rsconnect::setAccountInfo(name='3eqx4i-pascal-k0e',
+                          token='2DEF610EDB6DDA7E5630B151D1B019B3',
+                          secret='TxH51VtaB3hv63k5d9rPnn4tuVwbYcM4CvyH+ZW3')
+
+list.files()
+
+#rsconnect::deployApp('/')

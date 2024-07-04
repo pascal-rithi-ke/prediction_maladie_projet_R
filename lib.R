@@ -1,0 +1,61 @@
+if (!requireNamespace("shinythemes", quietly = TRUE)) {
+  install.packages("shinythemes")
+}
+if (!requireNamespace("bslib", quietly = TRUE)) {
+  install.packages("bslib")
+}
+if (!requireNamespace("rsconnect", quietly = TRUE)) {
+  install.packages("rsconnect")
+}
+if (!requireNamespace("shiny", quietly = TRUE)) {
+  install.packages("shiny")
+}
+if (!requireNamespace("tidyverse", quietly = TRUE)) {
+  install.packages("tidyverse")
+}
+if (!requireNamespace("dslabs", quietly = TRUE)) {
+  install.packages("dslabs")
+}
+if (!requireNamespace("dplyr", quietly = TRUE)) {
+  install.packages("dplyr")
+}
+if (!requireNamespace("caret", quietly = TRUE)) {
+  install.packages("caret")
+}
+if (!requireNamespace("lubridate", quietly = TRUE)) {
+  install.packages("lubridate")
+}
+if (!requireNamespace("tidytext", quietly = TRUE)) {
+  install.packages("tidytext")
+}
+if (!requireNamespace("RColorBrewer", quietly = TRUE)) {
+  install.packages("RColorBrewer")
+}
+if (!requireNamespace("randomForest", quietly = TRUE)) {
+  install.packages("randomForest")
+}
+if (!requireNamespace("tictoc", quietly = TRUE)) {
+  install.packages("tictoc")
+}
+if (!requireNamespace("e1071", quietly = TRUE)) {
+  install.packages("e1071")
+}
+if (!requireNamespace("ggpubr", quietly = TRUE)) {
+  install.packages("ggpubr")
+}
+if (!requireNamespace("ggplot2", quietly = TRUE)) {
+  install.packages("ggplot2")
+}
+if (!requireNamespace("reshape2", quietly = TRUE)) {
+  install.packages("reshape2")
+}
+if (!requireNamespace("fmsb", quietly = TRUE)) {
+  install.packages("fmsb")
+}
+
+if (!requireNamespace("dotenv", quietly = TRUE)) {
+  install.packages("dotenv")
+}
+if (!requireNamespace("mongolite", quietly = TRUE)) {
+  install.packages("mongolite")
+}
